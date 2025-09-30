@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Eu Vou - Estação Maria</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #009739 0%, #0057A6 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    h1 {
+      color: #FFD700;
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+    }
+
+    p {
+      margin: 0 0 20px;
+      color: #f0f0f0;
+      font-size: 1.1rem;
+    }
+
+    .controls {
+      margin: 16px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn, .file-label {
+      padding: 12px 20px;
+      margin: 8px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .btn {
+      background: #FFD700;
+      color: #003399;
+    }
+
+    .btn:hover {
+      background: #e6c200;
+      transform: scale(1.05);
+    }
+
+    label.file-label {
+      background: #008B45;
+      color: #fff;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    label.file-label:hover {
+      background: #006d35;
+      transform: scale(1.05);
+    }
+
+    input[type=file] {
+      display: none;
+    }
+
+    canvas {
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.3);
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Eu Vou! Estação Maria</h1>
+  <p>Envie sua foto e gere seu ingresso personalizado!</p>
+  <div class="controls">
+    <label class="file-label">
+      Selecionar foto
+      <input id="upload" type="file" accept="image/*">
+    </label>
+    <button id="download" class="btn">Baixar meu card</button>
+  </div>
+  <canvas id="canvas" width="584" height="730"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const upload = document.getElementById("upload");
+    const downloadBtn = document.getElementById("download");
+    const W = canvas.width, H = canvas.height;
+
+    // Parâmetros do quadro de foto
+    const photoX = 44;
+    const photoY = 140;
+    const photoW = 200;
+    const photoH = 230;
+    const angle = -3.5 * Math.PI / 180;
+    const radius = 20;
+
+    const template = new Image();
+    template.src = "template.png";
+    template.onload = () => {
+      ctx.drawImage(template, 0, 0, W, H);
+    };
+
+    function drawUserImage(img) {
+      ctx.drawImage(template, 0, 0, W, H);
+      ctx.save();
+      ctx.translate(photoX + photoW / 2, photoY + photoH / 2);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      roundRect(ctx, -photoW / 2, -photoH / 2, photoW, photoH, radius);
+      ctx.clip();
+
+      const scale = Math.max(photoW / img.width, photoH / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      const dx = -dw / 2;
+      const dy = -dh / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(photoX + photoW / 2, photoY + photoH / 2);
+      ctx.rotate(angle);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#fff";
+      roundRect(ctx, -photoW / 2, -photoH / 2, photoW, photoH, radius, false, true);
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      if (typeof stroke === 'undefined') stroke = true;
+      if (typeof radius === 'undefined') radius = 5;
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    upload.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => drawUserImage(img);
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "eu-vou-estacao-maria.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    });
+  </script>
+</body>
+</html>
